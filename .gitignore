@@ -1,0 +1,26 @@
+# Ignore all dataset and output images (uploaded to Google Drive instead)
+01_receipt_normalization/01_background_removal_and_cropping/input_raw_receipts/
+01_receipt_normalization/01_background_removal_and_cropping/outputs/
+01_receipt_normalization/02_rotation_correction/input_cropped_receipts/
+01_receipt_normalization/02_rotation_correction/outputs/
+01_receipt_normalization/03_deskewing_and_enhancing/input_rotated_receipts/
+01_receipt_normalization/03_deskewing_and_enhancing/outputs/
+02_text_detection/input_normalized/
+02_text_detection/output_text_boxes/
+03_text_recognition/input_text_boxes/
+03_text_recognition/output_crops_check/
+03_text_recognition/output_ocr_text/
+04_kie_layoutlmv3/input_ocr_text/
+04_kie_layoutlmv3/output_final_extraction/
+
+# Ignore global datasets
+datasets/
+
+# Ignore large model weights (.pt, .pth)
+models/
+*.pt
+*.pth
+
+# Python cache
+__pycache__/
+*.pyc
