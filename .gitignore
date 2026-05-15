@@ -1,16 +1,18 @@
 # Ignore all dataset and output images (uploaded to Google Drive instead)
+01_Segmentation_And_Detection_YOLO/outputs/
+01_Segmentation_And_Detection_YOLO/inputs/
 02_Normalize_Receipts/01_background_removal_and_cropping/input_raw_receipts/
 02_Normalize_Receipts/01_background_removal_and_cropping/outputs/
 02_Normalize_Receipts/02_rotation_correction/input_cropped_receipts/
 02_Normalize_Receipts/02_rotation_correction/outputs/
 02_Normalize_Receipts/03_deskewing_and_enhancing/input_rotated_receipts/
 02_Normalize_Receipts/03_deskewing_and_enhancing/outputs/
-01_text_detection/outputs/
-01_text_detection/datasets/
-03_text_recognition/outputs/
-03_text_recognition/datasets/
-04_kie_layoutlmv3/input_ocr_text/
-04_kie_layoutlmv3/output_final_extraction/
+03_text_detection/outputs/
+03_text_detection/datasets/
+04_text_recognition/outputs/
+04_text_recognition/datasets/
+05_kie_layoutlmv3/input_ocr_text/
+05_kie_layoutlmv3/output_final_extraction/
 
 # Ignore global datasets
 datasets/
