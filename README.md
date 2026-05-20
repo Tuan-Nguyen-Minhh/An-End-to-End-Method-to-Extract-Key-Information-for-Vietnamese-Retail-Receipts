@@ -38,7 +38,6 @@ Evaluates text alignment angles and performs deskewing to align text lines horiz
 ### Stage 3: Text Bounding Box Detection (03_text_detection)
 Identifies and locates individual text lines and blocks across the normalized, upright receipt.
 
-**Text Detection:**
 ![Text Detection](03_text_detection/samples/06_text_detection.jpg)
 
 ### Stage 4: Text Recognition (OCR) (04_text_recognition)
