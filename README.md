@@ -1,6 +1,6 @@
 # An End-to-End Method to Extract Key Information for Vietnamese Retail Receipts
 
-An end-to-end Computer Vision and Deep Learning pipeline to automatically segment, normalize, detect, transcribe, and extract key structured information from photos of Vietnamese retail receipts.
+This pipeline represents my final bachelor thesis project, which provides an end-to-end Computer Vision and Deep Learning solution designed to automatically segment, normalize, detect, transcribe, and extract key structured information from photos of Vietnamese retail receipts.
 
 ## Pipeline Architecture
 
