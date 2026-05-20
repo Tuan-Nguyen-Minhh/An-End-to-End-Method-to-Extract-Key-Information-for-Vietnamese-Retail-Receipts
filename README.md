@@ -52,48 +52,64 @@ Converts cropped text line boxes into digital text, optimized for Vietnamese cha
 
 ### Stage 5: Key Information Extraction (05_kie_layoutlmv3)
 Extracts semantic entities from the recognized text using LayoutLMv3, combining textual features, visual features, and spatial 2D coordinates.
-*   **Result**: The fine-tuned LayoutLMv3 model achieved a **Macro Average F1-Score of 0.93 (0.925)**.
+*   **Result**: The fine-tuned LayoutLMv3 model achieved a **Macro Average F1-Score of 0.93 (0.925)** and an overall **Accuracy of 93.78%** on the test set across **37 entity classes**.
 
-![KIE Sample](stage9_KIE/LayoutLMv3/results_layoutlmv3_report/000056_jpg.rf.98ee1c866a9367b810a4078a28ae3a54_original_vs_prediction.png)
+**KIE Visual Prediction:**
 
-Target Entities (37 total):
-- SHOP_NAME
-- ADDR
-- ADDR_PREFIX
-- AMOUNT
-- AMOUNT_PREFIX
-- BILLID
-- BILLID_PREFIX
-- CASHIER
-- CASHIER_PREFIX
-- DATETIME
-- DATETIME_PREFIX
-- FPRICE
-- FPRICE_PREFIX
-- OTHER
-- PHONE
-- PHONE_PREFIX
-- PRODUCT_NAME
-- PRODUCT_NAME_PREFIX
-- RECEMONEY
-- RECEMONEY_PREFIX
-- REMAMONEY
-- REMAMONEY_PREFIX
-- SUB_TPRICE
-- SUB_TPRICE_PREFIX
-- TAMOUNT
-- TAMOUNT_PREFIX
-- TDISCOUNT
-- TDISCOUNT_PREFIX
-- TITLE
-- TPRICE
-- TPRICE_PREFIX
-- UDISCOUNT
-- UDISCOUNT_PREFIX
-- UNIT
-- UNIT_PREFIX
-- UPRICE
-- UPRICE_PREFIX
+![KIE Predictions](05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_predictions.png)
+
+**Structured Extraction Table:**
+
+![Structured Output](05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_structured_output.png)
+
+**Confusion Matrix:**
+
+![Confusion Matrix](05_kie_layoutlmv3/reports/layoutlmv3_fpt37_chunked_confusion_matrix.png)
+
+**Per-Entity Classification Report (37 entities):**
+
+| Entity | Precision | Recall | F1-Score | Support |
+| :--- | :---: | :---: | :---: | :---: |
+| ADDR | 0.9822 | 0.9940 | 0.9881 | 167 |
+| ADDR_PREFIX | 0.8000 | 0.6154 | 0.6957 | 26 |
+| AMOUNT | 0.9881 | 0.9765 | 0.9823 | 511 |
+| AMOUNT_PREFIX | 0.9942 | 0.9773 | 0.9857 | 176 |
+| BILLID | 0.9689 | 0.9341 | 0.9512 | 167 |
+| BILLID_PREFIX | 0.9625 | 0.9625 | 0.9625 | 160 |
+| CASHIER | 0.9396 | 0.9524 | 0.9459 | 147 |
+| CASHIER_PREFIX | 0.9739 | 0.9613 | 0.9675 | 155 |
+| DATETIME | 0.9415 | 0.9365 | 0.9390 | 189 |
+| DATETIME_PREFIX | 0.9627 | 0.9810 | 0.9718 | 158 |
+| FPRICE | 0.7816 | 0.6800 | 0.7273 | 100 |
+| FPRICE_PREFIX | 0.7857 | 0.7097 | 0.7458 | 93 |
+| OTHER | 0.9390 | 0.9078 | 0.9231 | 1779 |
+| PHONE | 0.9231 | 0.9783 | 0.9499 | 184 |
+| PHONE_PREFIX | 0.8933 | 0.9371 | 0.9147 | 143 |
+| PRODUCT_NAME | 0.9841 | 0.9201 | 0.9510 | 538 |
+| PRODUCT_NAME_PREFIX | 0.9130 | 0.9800 | 0.9453 | 150 |
+| RECEMONEY | 0.6989 | 0.8228 | 0.7558 | 158 |
+| RECEMONEY_PREFIX | 0.7613 | 0.7712 | 0.7662 | 153 |
+| REMAMONEY | 0.9076 | 0.9153 | 0.9114 | 118 |
+| REMAMONEY_PREFIX | 0.9412 | 0.9825 | 0.9614 | 114 |
+| SHOP_NAME | 0.9854 | 0.9951 | 0.9902 | 204 |
+| SUB_TPRICE | 0.9784 | 0.9920 | 0.9852 | 502 |
+| SUB_TPRICE_PREFIX | 0.9829 | 0.9663 | 0.9745 | 178 |
+| TAMOUNT | 0.9221 | 0.9726 | 0.9467 | 73 |
+| TAMOUNT_PREFIX | 0.9091 | 0.9677 | 0.9375 | 62 |
+| TDISCOUNT | 0.8776 | 0.9247 | 0.9005 | 93 |
+| TDISCOUNT_PREFIX | 0.9286 | 0.9785 | 0.9529 | 93 |
+| TITLE | 0.9824 | 0.9940 | 0.9882 | 168 |
+| TPRICE | 0.9286 | 0.9548 | 0.9415 | 177 |
+| TPRICE_PREFIX | 0.9278 | 0.9126 | 0.9201 | 183 |
+| UDISCOUNT | 0.9674 | 0.9468 | 0.9570 | 94 |
+| UDISCOUNT_PREFIX | 0.8286 | 1.0000 | 0.9062 | 29 |
+| UNIT | 0.9803 | 0.9868 | 0.9835 | 151 |
+| UNIT_PREFIX | 0.9778 | 1.0000 | 0.9888 | 44 |
+| UPRICE | 0.9075 | 0.9812 | 0.9429 | 480 |
+| UPRICE_PREFIX | 0.9765 | 0.9486 | 0.9623 | 175 |
+| **Accuracy** | | | **0.9378** | **8092** |
+| **Macro Avg** | **0.9217** | **0.9302** | **0.9249** | **8092** |
+| **Weighted Avg** | **0.9388** | **0.9378** | **0.9378** | **8092** |
 
 ## Repository Directory Layout
 
