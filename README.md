@@ -54,15 +54,46 @@ Converts cropped text line boxes into digital text, optimized for Vietnamese cha
 Extracts semantic entities from the recognized text using LayoutLMv3, combining textual features, visual features, and spatial 2D coordinates.
 *   **Result**: The fine-tuned LayoutLMv3 model achieved a **Macro Average F1-Score of 0.93 (0.925)**.
 
-Target Entities:
+![KIE Sample](stage9_KIE/LayoutLMv3/results_layoutlmv3_report/000056_jpg.rf.98ee1c866a9367b810a4078a28ae3a54_original_vs_prediction.png)
+
+Target Entities (37 total):
 - SHOP_NAME
 - ADDR
-- PHONE
-- PRODUCT_NAME
+- ADDR_PREFIX
 - AMOUNT
-- UPRICE
+- AMOUNT_PREFIX
+- BILLID
+- BILLID_PREFIX
+- CASHIER
+- CASHIER_PREFIX
+- DATETIME
+- DATETIME_PREFIX
+- FPRICE
+- FPRICE_PREFIX
+- OTHER
+- PHONE
+- PHONE_PREFIX
+- PRODUCT_NAME
+- PRODUCT_NAME_PREFIX
+- RECEMONEY
+- RECEMONEY_PREFIX
+- REMAMONEY
+- REMAMONEY_PREFIX
 - SUB_TPRICE
+- SUB_TPRICE_PREFIX
+- TAMOUNT
+- TAMOUNT_PREFIX
+- TDISCOUNT
+- TDISCOUNT_PREFIX
+- TITLE
 - TPRICE
+- TPRICE_PREFIX
+- UDISCOUNT
+- UDISCOUNT_PREFIX
+- UNIT
+- UNIT_PREFIX
+- UPRICE
+- UPRICE_PREFIX
 
 ## Repository Directory Layout
 
