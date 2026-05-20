@@ -11,8 +11,15 @@
 03_text_detection/datasets/
 04_text_recognition/outputs/
 04_text_recognition/datasets/
-05_kie_layoutlmv3/input_ocr_text/
-05_kie_layoutlmv3/output_final_extraction/
+05_kie_layoutlmv3/input_ocr_text/*
+!05_kie_layoutlmv3/input_ocr_text/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f.jpg
+!05_kie_layoutlmv3/input_ocr_text/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f.json
+05_kie_layoutlmv3/output_final_extraction/*
+!05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_extracted.json
+!05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_predictions.png
+!05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_predictions.pdf
+!05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_structured_output.png
+!05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_structured_output.pdf
 
 # Ignore global datasets
 datasets/

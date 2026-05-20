@@ -15,16 +15,18 @@ from transformers import LayoutLMv3Processor, LayoutLMv3ForTokenClassification
 # ==========================================
 # 1. CONFIG
 # ==========================================
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
 TARGET_IMAGE = ""
 # Nếu muốn test ảnh cụ thể:
 # TARGET_IMAGE = "your_image_name.jpg"
 
-IMG_FOLDER = "/home/tuan/Desktop/ocr-projects/stage8_done_ocr/ocr_done/train/images"
-JSON_FOLDER = "/home/tuan/Desktop/ocr-projects/stage8_done_ocr/ocr_done/train/jsons"
+IMG_FOLDER = os.path.join(base_dir, "../input_ocr_text")
+JSON_FOLDER = os.path.join(base_dir, "../input_ocr_text")
 
-MODEL_DIR = "/home/tuan/Desktop/ocr-projects/stage9_KIE/LayoutLMv3/best_model"
+MODEL_DIR = os.path.join(base_dir, "../../models/layoutlmv3_best_model")
 
-SAVE_FOLDER = "./results_layoutlmv3_report"
+SAVE_FOLDER = os.path.join(base_dir, "../output_final_extraction")
 os.makedirs(SAVE_FOLDER, exist_ok=True)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
