@@ -111,6 +111,22 @@ Extracts semantic entities from the recognized text using LayoutLMv3, combining 
 | **Macro Avg** | **0.9217** | **0.9302** | **0.9249** | **8092** |
 | **Weighted Avg** | **0.9388** | **0.9378** | **0.9378** | **8092** |
 
+## Datasets Used in the Projects
+
+All datasets used across the five stages of this project are publicly available via Google Drive:
+
+📁 **[Access Datasets on Google Drive](https://drive.google.com/drive/folders/1CaN_-4wBZdzH7aB07bxvuvRyz7Dsom-L?usp=sharing)**
+
+The datasets cover the following stages:
+
+| Stage | Description |
+| :--- | :--- |
+| Stage 1 — Segmentation & Detection | Annotated receipt images with segmentation masks for YOLOv8 training |
+| Stage 2 — Normalization | Labeled images for rotation classification (ResNet-18) and deskewing |
+| Stage 3 — Text Detection | Receipt images with bounding box annotations for text line detection |
+| Stage 4 — Text Recognition (OCR) | Cropped text line images paired with ground-truth transcriptions |
+| Stage 5 — Key Information Extraction | Token-level annotated receipts with 37 entity classes for LayoutLMv3 |
+
 ## Repository Directory Layout
 
 ```bash
