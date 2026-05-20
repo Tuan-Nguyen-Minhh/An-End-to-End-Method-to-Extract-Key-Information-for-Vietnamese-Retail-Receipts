@@ -11,10 +11,8 @@ An end-to-end Computer Vision and Deep Learning pipeline to automatically segmen
 ### Stage 1: Receipt Segmentation & Detection (01_Segmentation_And_Detection_YOLO)
 Automatically localizes and segments the receipt from noisy backgrounds using a YOLOv8 Segmentation model.
 
-**Input Raw Image:**
 ![Raw Input](01_Segmentation_And_Detection_YOLO/sample/01_raw.jpg)
 
-**Detection Visual:**
 ![Detection Visual](01_Segmentation_And_Detection_YOLO/sample/02_detection_visual.jpg)
 
 ### Stage 2: Receipt Image Normalization (02_Normalize_Receipts)
@@ -30,13 +28,11 @@ Masks out the background pixels to black and crops the image strictly to the rec
 **2.2 Rotation Correction (02_rotation_correction):**
 Classifies the orientation of the cropped receipt and rotates it upright.
 
-**Rotated Result:**
 ![Rotated Result](02_Normalize_Receipts/02_rotation_correction/samples/04_rotated_result.jpg)
 
 **2.3 Deskewing & Enhancing (03_deskewing_and_enhancing):**
 Evaluates text alignment angles and performs deskewing to align text lines horizontally.
 
-**Deskewed Result:**
 ![Deskewed Result](02_Normalize_Receipts/03_deskewing_and_enhancing/samples/05_deskewed_enhanced.jpg)
 
 ### Stage 3: Text Bounding Box Detection (03_text_detection)
@@ -48,7 +44,6 @@ Identifies and locates individual text lines and blocks across the normalized, u
 ### Stage 4: Text Recognition (OCR) (04_text_recognition)
 Converts cropped text line boxes into digital text, optimized for Vietnamese character diacritics.
 
-**Visual OCR:**
 ![Visual OCR](04_text_recognition/samples/visual_ocr.jpg)
 
 ### Stage 5: Key Information Extraction (05_kie_layoutlmv3)
