@@ -448,8 +448,20 @@ def draw_kie_boxes(img, boxes, box_labels):
         if label != "OTHER" and not label.endswith("_PREFIX"):
             x1, y1, x2, y2 = map(int, box[:4])
             color = get_color(label)
+            
+            # Draw bounding box
             cv2.rectangle(draw, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(draw, label, (x1, max(0, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+            
+            # Draw solid background for text
+            (text_w, text_h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+            y_text_bg = max(0, y1 - text_h - 6)
+            cv2.rectangle(draw, (x1, y_text_bg), (x1 + text_w, y1), color, -1)
+            
+            # Draw text (white or black depending on bg luminance)
+            luminance = 0.299 * color[2] + 0.587 * color[1] + 0.114 * color[0]
+            text_color = (0, 0, 0) if luminance > 160 else (255, 255, 255)
+            cv2.putText(draw, label, (x1, max(0, y1 - 3)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1, cv2.LINE_AA)
+            
     return draw
 
 def run_pipeline(models, img_bgr):

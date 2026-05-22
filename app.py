@@ -79,26 +79,26 @@ if uploaded_file is not None:
         
         with col1:
             st.markdown("**1. Raw Input**")
-            st.image(cv2.cvtColor(results["raw_img"], cv2.COLOR_BGR2RGB), use_column_width=True)
+            st.image(cv2.cvtColor(results["raw_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
             
         with col2:
             st.markdown("**2. Segmented & Cropped**")
-            st.image(cv2.cvtColor(results["cropped"], cv2.COLOR_BGR2RGB), use_column_width=True)
+            st.image(cv2.cvtColor(results["cropped"], cv2.COLOR_BGR2RGB), use_container_width=True)
             
         with col3:
             st.markdown("**3. Normalized (Grayscale)**")
-            st.image(results["normalized"], use_column_width=True, channels="GRAY")
+            st.image(results["normalized"], use_container_width=True, channels="GRAY")
             
         st.write("") # spacer
         col4, col5 = st.columns(2)
         
         with col4:
             st.markdown("**4. Text Detection**")
-            st.image(cv2.cvtColor(results["detection_img"], cv2.COLOR_BGR2RGB), use_column_width=True)
+            st.image(cv2.cvtColor(results["detection_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
             
         with col5:
             st.markdown("**5. Key Info Extraction**")
-            st.image(cv2.cvtColor(results["kie_img"], cv2.COLOR_BGR2RGB), use_column_width=True)
+            st.image(cv2.cvtColor(results["kie_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
             
         st.divider()
         
