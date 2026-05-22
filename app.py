@@ -1,3 +1,9 @@
+import os
+import sys
+# Streamlit Cloud fix for opencv-python pulling in GUI dependencies via ultralytics
+os.system(f"{sys.executable} -m pip uninstall -y opencv-python opencv-contrib-python")
+os.system(f"{sys.executable} -m pip install opencv-python-headless")
+
 import streamlit as st
 import cv2
 import numpy as np
