@@ -28,7 +28,7 @@ datasets/
 models/
 *.pt
 *.pth
-
+04_text_recognition/ocr_datasets
 # Python cache
 __pycache__/
 *.pyc
