@@ -124,7 +124,7 @@ if uploaded_file is not None:
                 st.markdown("**Data Table**")
                 # Convert dict to dataframe for nice display
                 df = pd.DataFrame(list(extracted_data.items()), columns=["Field", "Value"])
-                st.dataframe(df, use_container_width=True, hide_index=True)
+                st.dataframe(df, hide_index=True)
                 
             with col_json:
                 st.markdown("**JSON Output**")
