@@ -6,6 +6,7 @@ import json
 import io
 import pandas as pd
 
+from download_models import check_and_download_models
 from pipeline import load_all_models, run_pipeline
 
 # Page configuration
@@ -49,6 +50,7 @@ st.markdown("""
 # Load models efficiently using cache
 @st.cache_resource(show_spinner=False)
 def load_models_cached():
+    check_and_download_models()
     return load_all_models()
 
 st.title("Receipt OCR & Key Information Extraction")
