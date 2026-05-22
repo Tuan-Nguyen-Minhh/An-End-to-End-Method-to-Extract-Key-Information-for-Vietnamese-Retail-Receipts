@@ -317,17 +317,27 @@ def stage3_detect_text(det_model, norm_img):
 # ==========================================
 def stage4_ocr(ocr_model, norm_img, boxes):
     img_bgr = cv2.cvtColor(norm_img, cv2.COLOR_GRAY2BGR)
-    results = []
-    for box in boxes:
+    pil_imgs = []
+    valid_indices = []
+    
+    for i, box in enumerate(boxes):
         x1, y1, x2, y2 = map(int, box[:4])
         crop = img_bgr[y1:y2, x1:x2]
-        if crop.size == 0:
-            results.append("")
+        if crop.size == 0 or crop.shape[0] == 0 or crop.shape[1] == 0:
             continue
         pil_img = Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB))
-        text = ocr_model.predict(pil_img)
-        results.append(text)
-    return results
+        pil_imgs.append(pil_img)
+        valid_indices.append(i)
+        
+    results_texts = []
+    if pil_imgs:
+        results_texts = ocr_model.predict_batch(pil_imgs, return_prob=False)
+        
+    final_results = [""] * len(boxes)
+    for idx_in_valid, orig_idx in enumerate(valid_indices):
+        final_results[orig_idx] = results_texts[idx_in_valid]
+        
+    return final_results
 
 
 # ==========================================
@@ -385,6 +395,8 @@ def stage5_kie(kie_model, processor, norm_img, boxes, texts):
     extracted = {}
     other_id = LABEL_MAP.get("OTHER", 12)
     
+    box_labels = ["OTHER"] * len(boxes)
+    
     for i in range(len(boxes)):
         if i in valid_indices:
             idx_in_valid = valid_indices.index(i)
@@ -393,6 +405,8 @@ def stage5_kie(kie_model, processor, norm_img, boxes, texts):
             
             label = ID2LABEL.get(pred_id, "OTHER")
             txt = texts[i].strip()
+            
+            box_labels[i] = label
             
             # Combine strings nicely
             if label != "OTHER" and score >= KIE_CONF_THRESHOLD and not label.endswith("_PREFIX"):
@@ -405,7 +419,7 @@ def stage5_kie(kie_model, processor, norm_img, boxes, texts):
         if joined_str:
             final_extracted[key] = joined_str
             
-    return final_extracted
+    return final_extracted, box_labels
 
 
 # ==========================================
@@ -414,6 +428,29 @@ def stage5_kie(kie_model, processor, norm_img, boxes, texts):
 def export_to_json(extracted_data, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(extracted_data, f, ensure_ascii=False, indent=4)
+
+def draw_detection_boxes(img, boxes):
+    draw = img.copy()
+    for box in boxes:
+        x1, y1, x2, y2 = map(int, box[:4])
+        cv2.rectangle(draw, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    return draw
+
+def draw_kie_boxes(img, boxes, box_labels):
+    draw = img.copy()
+    
+    # Generate some distinct colors based on label strings
+    def get_color(label):
+        np.random.seed(hash(label) % 2**32)
+        return tuple(int(c) for c in np.random.randint(50, 200, 3))
+        
+    for box, label in zip(boxes, box_labels):
+        if label != "OTHER" and not label.endswith("_PREFIX"):
+            x1, y1, x2, y2 = map(int, box[:4])
+            color = get_color(label)
+            cv2.rectangle(draw, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(draw, label, (x1, max(0, y1 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2, cv2.LINE_AA)
+    return draw
 
 def run_pipeline(models, img_bgr):
     """
@@ -433,12 +470,18 @@ def run_pipeline(models, img_bgr):
     texts = stage4_ocr(models['ocr'], norm_gray, boxes)
     
     # 5. KIE
-    extracted_json = stage5_kie(models['kie_model'], models['kie_processor'], norm_gray, boxes, texts)
+    extracted_json, box_labels = stage5_kie(models['kie_model'], models['kie_processor'], norm_gray, boxes, texts)
+    
+    # Draw visualizations
+    det_img = draw_detection_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes)
+    kie_img = draw_kie_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes, box_labels)
     
     return {
         "raw_img": img_bgr,
         "cropped": cropped_img,
         "normalized": norm_gray,
+        "detection_img": det_img,
+        "kie_img": kie_img,
         "boxes": boxes,
         "extracted_json": extracted_json
     }
