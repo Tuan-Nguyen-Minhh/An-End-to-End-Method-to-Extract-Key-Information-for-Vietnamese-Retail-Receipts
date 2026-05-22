@@ -429,29 +429,49 @@ def export_to_json(extracted_data, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(extracted_data, f, ensure_ascii=False, indent=4)
 
-import unicodedata
+import urllib.request
+from PIL import ImageDraw, ImageFont
 
-def remove_accents(input_str):
-    nfkd_form = unicodedata.normalize('NFKD', input_str)
-    return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
+FONT_URL = "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf"
+FONT_PATH = os.path.join(BASE_DIR, "Roboto-Regular.ttf")
+
+def get_vietnamese_font(size=14):
+    if not os.path.exists(FONT_PATH):
+        try:
+            urllib.request.urlretrieve(FONT_URL, FONT_PATH)
+        except Exception:
+            pass
+    try:
+        return ImageFont.truetype(FONT_PATH, size)
+    except Exception:
+        return ImageFont.load_default()
 
 def draw_ocr_boxes(img, boxes, texts):
-    draw = img.copy()
+    pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(pil_img)
+    font = get_vietnamese_font(size=16)
+    
     for box, txt in zip(boxes, texts):
         if not txt.strip():
             continue
         x1, y1, x2, y2 = map(int, box[:4])
-        clean_txt = remove_accents(txt.strip())
         
-        # Draw box
-        cv2.rectangle(draw, (x1, y1), (x2, y2), (255, 165, 0), 2)
+        # Draw bounding box
+        draw.rectangle(((x1, y1), (x2, y2)), outline=(255, 165, 0), width=2)
         
         # Draw background and text
-        (text_w, text_h), _ = cv2.getTextSize(clean_txt, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        try:
+            bbox = draw.textbbox((0, 0), txt.strip(), font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+        except AttributeError:
+            text_w, text_h = font.getsize(txt.strip())
+            
         y_text_bg = max(0, y1 - text_h - 6)
-        cv2.rectangle(draw, (x1, y_text_bg), (x1 + text_w, y1), (255, 165, 0), -1)
-        cv2.putText(draw, clean_txt, (x1, max(0, y1 - 3)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    return draw
+        draw.rectangle(((x1, y_text_bg), (x1 + text_w, y1)), fill=(255, 165, 0))
+        draw.text((x1, max(0, y1 - text_h - 4)), txt.strip(), font=font, fill=(0, 0, 0))
+        
+    return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
 def draw_detection_boxes(img, boxes):
     draw = img.copy()
