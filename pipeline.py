@@ -429,6 +429,30 @@ def export_to_json(extracted_data, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(extracted_data, f, ensure_ascii=False, indent=4)
 
+import unicodedata
+
+def remove_accents(input_str):
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
+
+def draw_ocr_boxes(img, boxes, texts):
+    draw = img.copy()
+    for box, txt in zip(boxes, texts):
+        if not txt.strip():
+            continue
+        x1, y1, x2, y2 = map(int, box[:4])
+        clean_txt = remove_accents(txt.strip())
+        
+        # Draw box
+        cv2.rectangle(draw, (x1, y1), (x2, y2), (255, 165, 0), 2)
+        
+        # Draw background and text
+        (text_w, text_h), _ = cv2.getTextSize(clean_txt, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        y_text_bg = max(0, y1 - text_h - 6)
+        cv2.rectangle(draw, (x1, y_text_bg), (x1 + text_w, y1), (255, 165, 0), -1)
+        cv2.putText(draw, clean_txt, (x1, max(0, y1 - 3)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+    return draw
+
 def draw_detection_boxes(img, boxes):
     draw = img.copy()
     for box in boxes:
@@ -486,6 +510,7 @@ def run_pipeline(models, img_bgr):
     
     # Draw visualizations
     det_img = draw_detection_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes)
+    ocr_img = draw_ocr_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes, texts)
     kie_img = draw_kie_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes, box_labels)
     
     return {
@@ -493,6 +518,7 @@ def run_pipeline(models, img_bgr):
         "cropped": cropped_img,
         "normalized": norm_gray,
         "detection_img": det_img,
+        "ocr_img": ocr_img,
         "kie_img": kie_img,
         "boxes": boxes,
         "extracted_json": extracted_json

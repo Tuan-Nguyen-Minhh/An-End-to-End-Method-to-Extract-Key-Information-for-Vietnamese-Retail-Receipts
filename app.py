@@ -8,6 +8,13 @@ import pandas as pd
 
 from pipeline import load_all_models, run_pipeline
 
+def resize_for_display(img, max_height=800):
+    h, w = img.shape[:2]
+    if h > max_height:
+        scale = max_height / h
+        return cv2.resize(img, (int(w * scale), max_height))
+    return img
+
 # Page configuration
 st.set_page_config(
     page_title="Receipt OCR & KIE Pipeline",
@@ -79,26 +86,30 @@ if uploaded_file is not None:
         
         with col1:
             st.markdown("**1. Raw Input**")
-            st.image(cv2.cvtColor(results["raw_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
+            st.image(resize_for_display(cv2.cvtColor(results["raw_img"], cv2.COLOR_BGR2RGB)), use_container_width=True)
             
         with col2:
             st.markdown("**2. Segmented & Cropped**")
-            st.image(cv2.cvtColor(results["cropped"], cv2.COLOR_BGR2RGB), use_container_width=True)
+            st.image(resize_for_display(cv2.cvtColor(results["cropped"], cv2.COLOR_BGR2RGB)), use_container_width=True)
             
         with col3:
             st.markdown("**3. Normalized (Grayscale)**")
-            st.image(results["normalized"], use_container_width=True, channels="GRAY")
+            st.image(resize_for_display(results["normalized"]), use_container_width=True, channels="GRAY")
             
         st.write("") # spacer
-        col4, col5 = st.columns(2)
+        col4, col5, col6 = st.columns(3)
         
         with col4:
             st.markdown("**4. Text Detection**")
-            st.image(cv2.cvtColor(results["detection_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
+            st.image(resize_for_display(cv2.cvtColor(results["detection_img"], cv2.COLOR_BGR2RGB)), use_container_width=True)
             
         with col5:
-            st.markdown("**5. Key Info Extraction**")
-            st.image(cv2.cvtColor(results["kie_img"], cv2.COLOR_BGR2RGB), use_container_width=True)
+            st.markdown("**5. OCR Text Visual**")
+            st.image(resize_for_display(cv2.cvtColor(results["ocr_img"], cv2.COLOR_BGR2RGB)), use_container_width=True)
+            
+        with col6:
+            st.markdown("**6. Key Info Extraction**")
+            st.image(resize_for_display(cv2.cvtColor(results["kie_img"], cv2.COLOR_BGR2RGB)), use_container_width=True)
             
         st.divider()
         
