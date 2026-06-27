@@ -1,3 +1,5 @@
+
+
 import os
 import json
 import numpy as np
@@ -15,9 +17,7 @@ from vietocr.tool.config import Cfg
 # For LayoutLMv3
 from transformers import LayoutLMv3Processor, LayoutLMv3ForTokenClassification
 
-# ==========================================
 # CONFIG & CONSTANTS
-# ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_SEG_PATH = os.path.join(BASE_DIR, "models/bill_segmentation_best.pt")
 MODEL_ROT_PATH = os.path.join(BASE_DIR, "models/resnet18_rotation_best.pt")
@@ -54,11 +54,17 @@ LABEL_MAP = {
     "UPRICE_PREFIX": 36,
 }
 ID2LABEL = {v: k for k, v in LABEL_MAP.items()}
+ITEM_FIELDS = {"PRODUCT_NAME", "UNIT", "AMOUNT", "UPRICE", "UDISCOUNT", "SUB_TPRICE"}.
+HEADER_FOOTER_FIELDS = {
+    "SHOP_NAME", "ADDR", "PHONE", "TITLE", "DATETIME", "BILLID", "CASHIER",
+    "TPRICE", "TAMOUNT", "TDISCOUNT", "RECEMONEY", "REMAMONEY", "FPRICE",
+}
+INCLUDED_HEADER_FOOTER_FIELDS = {"SHOP_NAME", "ADDR", "DATETIME", "TPRICE"}
+INCLUDED_ITEM_FIELDS = {"PRODUCT_NAME", "AMOUNT", "UPRICE", "SUB_TPRICE", "UDISCOUNT"}
+# ===== END NEW =====
 
 
-# ==========================================
 # MODELS LOADING
-# ==========================================
 def build_resnet18_scratch(num_classes=4):
     model = models.resnet18(weights=None)
     in_features = model.fc.in_features
@@ -67,11 +73,7 @@ def build_resnet18_scratch(num_classes=4):
 
 def load_all_models():
     models_dict = {}
-    
-    # 1. Segmentation
     models_dict['seg'] = YOLO(MODEL_SEG_PATH)
-    
-    # 2. Rotation
     rot_model = build_resnet18_scratch(num_classes=4)
     checkpoint = torch.load(MODEL_ROT_PATH, map_location=DEVICE)
     state_dict = checkpoint["model_state_dict"] if "model_state_dict" in checkpoint else (checkpoint["state_dict"] if "state_dict" in checkpoint else checkpoint)
@@ -80,10 +82,10 @@ def load_all_models():
     rot_model.to(DEVICE)
     rot_model.eval()
     models_dict['rot'] = rot_model
-    
+
     # 3. Detection
     models_dict['det'] = YOLO(MODEL_DET_PATH)
-    
+
     # 4. OCR
     config = Cfg.load_config_from_name('vgg_transformer')
     config['weights'] = MODEL_OCR_PATH
@@ -91,35 +93,32 @@ def load_all_models():
     config['device'] = 'cpu' if DEVICE.type == 'cpu' else 'cuda:0'
     config['predictor']['beamsearch'] = False
     models_dict['ocr'] = Predictor(config)
-    
+
     # 5. KIE
     processor = LayoutLMv3Processor.from_pretrained(MODEL_KIE_PATH, apply_ocr=False)
     kie_model = LayoutLMv3ForTokenClassification.from_pretrained(MODEL_KIE_PATH).to(DEVICE)
     kie_model.eval()
     models_dict['kie_processor'] = processor
     models_dict['kie_model'] = kie_model
-    
+
     return models_dict
 
-
-# ==========================================
 # STAGE 1: SEGMENTATION
-# ==========================================
 def stage1_segment(model, img_bgr):
     result = model.predict(img_bgr, conf=0.5, verbose=False)[0]
     if result.masks is None or len(result.masks.data) == 0:
         return img_bgr
-    
+
     best_idx = 0
     if result.boxes is not None and len(result.boxes) > 0:
         best_idx = int(np.argmax(result.boxes.conf.cpu().numpy()))
-        
+
     mask = result.masks.data[best_idx].cpu().numpy().astype(np.uint8)
     if mask.shape[:2] != img_bgr.shape[:2]:
         mask = cv2.resize(mask, (img_bgr.shape[1], img_bgr.shape[0]), interpolation=cv2.INTER_NEAREST)
-    
+
     masked_img = img_bgr * mask[:, :, None]
-    
+
     # Find bounding box of mask to crop
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if contours:
@@ -128,13 +127,10 @@ def stage1_segment(model, img_bgr):
         cropped_img = masked_img[y:y+h, x:x+w]
     else:
         cropped_img = masked_img
-        
+
     return cropped_img
 
-
-# ==========================================
 # STAGE 2: NORMALIZATION
-# ==========================================
 def get_transform(img_size=224):
     return transforms.Compose([
         transforms.Resize((img_size, img_size)),
@@ -157,13 +153,13 @@ def evaluate_four_rotations(model, img_pil):
         180: img_pil.rotate(180, expand=True),
         270: img_pil.rotate(270, expand=True),
     }
-    
+
     results = {}
     for angle, candidate_img in candidates.items():
         probs = classify_rotation(model, candidate_img)
-        p0 = float(probs[0].item()) # class0 is upright
+        p0 = float(probs[0].item())  # class0 is upright
         results[angle] = {"image": candidate_img, "p0": p0}
-        
+
     best_angle = max(results.keys(), key=lambda a: results[a]["p0"])
     return results[best_angle]["image"]
 
@@ -212,24 +208,22 @@ def stage2_normalize(rot_model, cropped_bgr):
     pil_img = Image.fromarray(cv2.cvtColor(cropped_bgr, cv2.COLOR_BGR2RGB))
     rotated_pil = evaluate_four_rotations(rot_model, pil_img)
     rotated_bgr = cv2.cvtColor(np.array(rotated_pil), cv2.COLOR_RGB2BGR)
-    
+
     # 2. Deskew and Enhance
     coarse_angle = estimate_angle_from_mask(rotated_bgr)
     refined_angle = refine_angle_by_projection(rotated_bgr, coarse_angle)
     deskewed_bgr = rotate_keep_canvas(rotated_bgr, refined_angle)
-    
+
     gray = cv2.cvtColor(deskewed_bgr, cv2.COLOR_BGR2GRAY)
     clahe_op = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     clahe_img = clahe_op.apply(gray)
     blur = cv2.GaussianBlur(clahe_img, (0, 0), 1.0)
     sharpened_gray = cv2.addWeighted(clahe_img, 1.5, blur, -0.5, 0)
-    
+
     return sharpened_gray
 
 
-# ==========================================
 # STAGE 3: TEXT DETECTION
-# ==========================================
 def clip_box(x1, y1, x2, y2, w, h):
     x1 = max(0, min(int(round(x1)), w - 1))
     y1 = max(0, min(int(round(y1)), h - 1))
@@ -296,7 +290,7 @@ def stage3_detect_text(det_model, norm_img):
     img_bgr = cv2.cvtColor(norm_img, cv2.COLOR_GRAY2BGR)
     h, w = img_bgr.shape[:2]
     result = det_model.predict(img_bgr, imgsz=1280, conf=DET_CONF_THRES, iou=DET_IOU_THRES, device=DEVICE, verbose=False)[0]
-    
+
     raw_boxes = []
     if result.boxes is not None and len(result.boxes) > 0:
         xyxy = result.boxes.xyxy.cpu().numpy()
@@ -305,21 +299,19 @@ def stage3_detect_text(det_model, norm_img):
         for i in range(len(xyxy)):
             x1, y1, x2, y2 = clip_box(xyxy[i][0], xyxy[i][1], xyxy[i][2], xyxy[i][3], w, h)
             raw_boxes.append([x1, y1, x2, y2, float(confs[i]), int(classes[i])])
-            
+
     boxes = [expand_box(b, w, h) for b in raw_boxes]
     boxes = [b for b in boxes if max(0, b[2] - b[0]) * max(0, b[3] - b[1]) >= MIN_BOX_AREA]
     boxes = merge_boxes_linewise(boxes)
-    return boxes # list of [x1, y1, x2, y2, conf, cls_id]
+    return boxes  # list of [x1, y1, x2, y2, conf, cls_id]
 
 
-# ==========================================
 # STAGE 4: OCR
-# ==========================================
 def stage4_ocr(ocr_model, norm_img, boxes):
     img_bgr = cv2.cvtColor(norm_img, cv2.COLOR_GRAY2BGR)
     pil_imgs = []
     valid_indices = []
-    
+
     for i, box in enumerate(boxes):
         x1, y1, x2, y2 = map(int, box[:4])
         crop = img_bgr[y1:y2, x1:x2]
@@ -328,21 +320,19 @@ def stage4_ocr(ocr_model, norm_img, boxes):
         pil_img = Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB))
         pil_imgs.append(pil_img)
         valid_indices.append(i)
-        
+
     results_texts = []
     if pil_imgs:
         results_texts = ocr_model.predict_batch(pil_imgs, return_prob=False)
-        
+
     final_results = [""] * len(boxes)
     for idx_in_valid, orig_idx in enumerate(valid_indices):
         final_results[orig_idx] = results_texts[idx_in_valid]
-        
+
     return final_results
 
 
-# ==========================================
 # STAGE 5: KIE
-# ==========================================
 def normalize_bbox_pixel_to_1000(box, image_width, image_height):
     x1, y1, x2, y2 = box[:4]
     return [
@@ -356,84 +346,140 @@ def stage5_kie(kie_model, processor, norm_img, boxes, texts):
     img_bgr = cv2.cvtColor(norm_img, cv2.COLOR_GRAY2BGR)
     image_pil = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
     h, w = img_bgr.shape[:2]
-    
+
     norm_bboxes = [normalize_bbox_pixel_to_1000(box, w, h) for box in boxes]
-    
+
     valid_indices = [i for i, t in enumerate(texts) if str(t).strip()]
     if not valid_indices:
-        return {}
-        
+        return [], ["OTHER"] * len(boxes)
+
     valid_texts = [texts[i] for i in valid_indices]
     valid_norm_bboxes = [norm_bboxes[i] for i in valid_indices]
-    
+
     encoding = processor(
         image_pil, valid_texts, boxes=valid_norm_bboxes, truncation=True,
         padding="max_length", max_length=512, return_tensors="pt"
     )
-    
+
     try:
         word_ids = encoding.word_ids(batch_index=0)
-    except:
+    except Exception:
         word_ids = encoding.encodings[0].word_ids
-        
+
     encoding = encoding.to(DEVICE)
     with torch.no_grad():
         outputs = kie_model(**encoding)
-        
+
     probs = torch.softmax(outputs.logits, dim=-1).squeeze(0).cpu().numpy()
     pred_ids = outputs.logits.argmax(dim=-1).squeeze(0).cpu().numpy()
-    
+
     word_pred_ids = {}
     word_scores = {}
-    
+
     for token_idx, word_id in enumerate(word_ids):
         if word_id is None or word_id in word_pred_ids:
             continue
         word_pred_ids[word_id] = int(pred_ids[token_idx])
         word_scores[word_id] = float(probs[token_idx][pred_ids[token_idx]])
-        
-    extracted = {}
+
     other_id = LABEL_MAP.get("OTHER", 12)
-    
     box_labels = ["OTHER"] * len(boxes)
-    
+
+    # ===== CHANGED: flat list output, one entry per box, in reading order
+    # (top-to-bottom, then left-to-right -- same order as `boxes`, which
+    # merge_boxes_linewise() already sorted by (y1, x1) back in Stage 3). =====
+    extracted_entries = []
+
     for i in range(len(boxes)):
-        if i in valid_indices:
-            idx_in_valid = valid_indices.index(i)
-            pred_id = word_pred_ids.get(idx_in_valid, other_id)
-            score = word_scores.get(idx_in_valid, 0.0)
-            
-            label = ID2LABEL.get(pred_id, "OTHER")
-            txt = texts[i].strip()
-            
-            box_labels[i] = label
-            
-            # Combine strings nicely
-            if label != "OTHER" and score >= KIE_CONF_THRESHOLD and not label.endswith("_PREFIX"):
-                extracted.setdefault(label, []).append(txt)
-                
-    # Flatten lists into strings
-    final_extracted = {}
-    for key, val_list in extracted.items():
-        joined_str = " ".join([v.strip() for v in val_list if v.strip()])
-        if joined_str:
-            final_extracted[key] = joined_str
-            
-    return final_extracted, box_labels
+        if i not in valid_indices:
+            continue
+        idx_in_valid = valid_indices.index(i)
+        pred_id = word_pred_ids.get(idx_in_valid, other_id)
+        score = word_scores.get(idx_in_valid, 0.0)
+
+        label = ID2LABEL.get(pred_id, "OTHER")
+        txt = texts[i].strip()
+
+        # box_labels always reflects the raw model prediction -- used only
+        # by draw_kie_boxes() for visualization, unaffected by the allowlist.
+        box_labels[i] = label
+
+        if label == "OTHER" or score < KIE_CONF_THRESHOLD or label.endswith("_PREFIX"):
+            continue
+        if not txt:
+            continue
+        is_header_footer = label in HEADER_FOOTER_FIELDS and label in INCLUDED_HEADER_FOOTER_FIELDS
+        is_item_field = label in ITEM_FIELDS and label in INCLUDED_ITEM_FIELDS
+        if not (is_header_footer or is_item_field):
+            continue
+        extracted_entries.append({label: txt})
+
+    return extracted_entries, box_labels
 
 
-# ==========================================
 # EXPORT & RUN PIPELINE
-# ==========================================
 def export_to_json(extracted_data, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(extracted_data, f, ensure_ascii=False, indent=4)
 
 import urllib.request
 from PIL import ImageDraw, ImageFont
+from matplotlib import font_manager
 
 FONT_URL = "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf"
 FONT_PATH = os.path.join(BASE_DIR, "Roboto-Regular.ttf")
+
+# ===== Premium color palette for KIE labels =====
+LABEL_COLORS = {
+    "SHOP_NAME": "#1f77b4", "ADDR": "#17becf", "PHONE": "#2ca02c",
+    "BILLID": "#9467bd", "DATETIME": "#8c564b", "CASHIER": "#e377c2",
+    "TITLE": "#7f7f7f", "PRODUCT_NAME": "#ff7f0e", "AMOUNT": "#bcbd22",
+    "UNIT": "#7f7f7f", "UPRICE": "#d62728", "FPRICE": "#ff9896",
+    "TPRICE": "#c49c94", "SUB_TPRICE": "#e377c2", "TAMOUNT": "#d62728",
+    "TDISCOUNT": "#9467bd", "UDISCOUNT": "#8c564b", "RECEMONEY": "#2ca02c",
+    "REMAMONEY": "#ff7f0e",
+}
+
+def get_color(label):
+    if label.endswith("_PREFIX"):
+        label = label.replace("_PREFIX", "")
+    return LABEL_COLORS.get(label, "#333333")
+
+def setup_vietnamese_font():
+    font_candidates = [
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf",
+    ]
+    for fp in font_candidates:
+        if os.path.exists(fp):
+            font_manager.fontManager.addfont(fp)
+            return font_manager.FontProperties(fname=fp)
+    # Fallback: try downloading Roboto
+    if not os.path.exists(FONT_PATH):
+        try:
+            urllib.request.urlretrieve(FONT_URL, FONT_PATH)
+        except Exception:
+            pass
+    if os.path.exists(FONT_PATH):
+        font_manager.fontManager.addfont(FONT_PATH)
+        return font_manager.FontProperties(fname=FONT_PATH)
+    return None
+
+VIET_FONT = setup_vietnamese_font()
+
+def _get_pil_font(size=20):
+    """Load a Vietnamese-capable font at the given size."""
+    if VIET_FONT:
+        try:
+            return ImageFont.truetype(VIET_FONT.get_file(), size)
+        except Exception:
+            pass
+    try:
+        return ImageFont.truetype(FONT_PATH, size)
+    except Exception:
+        return ImageFont.load_default()
 
 def get_vietnamese_font(size=14):
     if not os.path.exists(FONT_PATH):
@@ -447,92 +493,107 @@ def get_vietnamese_font(size=14):
         return ImageFont.load_default()
 
 def draw_ocr_boxes(img, boxes, texts):
+    """Draw OCR results with semi-transparent blue boxes and Vietnamese text labels."""
     pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    draw = ImageDraw.Draw(pil_img)
-    font = get_vietnamese_font(size=16)
-    
+    draw = ImageDraw.Draw(pil_img, "RGBA")
+    font = _get_pil_font(size=20)
+
     for box, txt in zip(boxes, texts):
-        if not txt.strip():
+        txt = str(txt).strip()
+        if not txt:
             continue
         x1, y1, x2, y2 = map(int, box[:4])
-        
-        # Draw bounding box
-        draw.rectangle(((x1, y1), (x2, y2)), outline=(255, 165, 0), width=2)
-        
-        # Draw background and text
+
+        # Semi-transparent fill + solid outline
+        draw.rectangle([x1, y1, x2, y2], fill=(0, 150, 255, 30), outline=(0, 150, 255, 255), width=2)
+
+        # Text label background
         try:
-            bbox = draw.textbbox((0, 0), txt.strip(), font=font)
-            text_w = bbox[2] - bbox[0]
-            text_h = bbox[3] - bbox[1]
+            tb = draw.textbbox((0, 0), txt, font=font)
+            tw, th = tb[2] - tb[0], tb[3] - tb[1]
         except AttributeError:
-            text_w, text_h = font.getsize(txt.strip())
-            
-        y_text_bg = max(0, y1 - text_h - 6)
-        draw.rectangle(((x1, y_text_bg), (x1 + text_w, y1)), fill=(255, 165, 0))
-        draw.text((x1, max(0, y1 - text_h - 4)), txt.strip(), font=font, fill=(0, 0, 0))
-        
+            tw, th = draw.textsize(txt, font=font)
+
+        lx1, ly1 = x1, max(0, y1 - th - 6)
+        lx2, ly2 = x1 + tw + 8, max(0, y1)
+        draw.rectangle([lx1, ly1, lx2, ly2], fill=(0, 150, 255, 240))
+        draw.text((lx1 + 4, ly1 + 1), txt, font=font, fill=(255, 255, 255, 255))
+
     return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
 def draw_detection_boxes(img, boxes):
-    draw = img.copy()
+    """Draw text detection boxes with green outlines and semi-transparent fill."""
+    pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(pil_img, "RGBA")
+
     for box in boxes:
         x1, y1, x2, y2 = map(int, box[:4])
-        cv2.rectangle(draw, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    return draw
+        draw.rectangle([x1, y1, x2, y2], fill=(0, 255, 0, 25), outline=(0, 200, 0, 255), width=2)
+
+    return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
 def draw_kie_boxes(img, boxes, box_labels):
-    draw = img.copy()
-    
-    # Generate some distinct colors based on label strings
-    def get_color(label):
-        np.random.seed(hash(label) % 2**32)
-        return tuple(int(c) for c in np.random.randint(50, 200, 3))
-        
+    """
+    Draw KIE classification results with color-coded semi-transparent boxes
+    and label tags — matching the premium style from export_full_pipeline_drawio.py.
+
+    NOTE: intentionally NOT filtered by INCLUDED_HEADER_FOOTER_FIELDS /
+    INCLUDED_ITEM_FIELDS. This keeps showing every field the model
+    predicted for evaluation/visualization purposes.
+    """
+    pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(pil_img, "RGBA")
+    font = _get_pil_font(size=20)
+
     for box, label in zip(boxes, box_labels):
-        if label != "OTHER" and not label.endswith("_PREFIX"):
-            x1, y1, x2, y2 = map(int, box[:4])
-            color = get_color(label)
-            
-            # Draw bounding box
-            cv2.rectangle(draw, (x1, y1), (x2, y2), color, 2)
-            
-            # Draw solid background for text
-            (text_w, text_h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-            y_text_bg = max(0, y1 - text_h - 6)
-            cv2.rectangle(draw, (x1, y_text_bg), (x1 + text_w, y1), color, -1)
-            
-            # Draw text (white or black depending on bg luminance)
-            luminance = 0.299 * color[2] + 0.587 * color[1] + 0.114 * color[0]
-            text_color = (0, 0, 0) if luminance > 160 else (255, 255, 255)
-            cv2.putText(draw, label, (x1, max(0, y1 - 3)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1, cv2.LINE_AA)
-            
-    return draw
+        if label == "OTHER" or label.endswith("_PREFIX"):
+            continue
+
+        color_hex = get_color(label)
+        r = int(color_hex[1:3], 16)
+        g = int(color_hex[3:5], 16)
+        b = int(color_hex[5:7], 16)
+
+        x1, y1, x2, y2 = map(int, box[:4])
+
+        # Semi-transparent fill + solid outline
+        draw.rectangle([x1, y1, x2, y2], fill=(r, g, b, 50), outline=(r, g, b, 255), width=2)
+
+        # Label tag background
+        try:
+            tb = draw.textbbox((0, 0), label, font=font)
+            tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        except AttributeError:
+            tw, th = draw.textsize(label, font=font)
+
+        lx1, ly1 = x1, max(0, y1 - th - 6)
+        lx2, ly2 = x1 + tw + 8, max(0, y1)
+        draw.rectangle([lx1, ly1, lx2, ly2], fill=(r, g, b, 240))
+        draw.text((lx1 + 4, ly1 + 1), label, font=font, fill=(255, 255, 255, 255))
+
+    return cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
 
 def run_pipeline(models, img_bgr):
-    """
-    Executes the full 5-stage pipeline.
-    Returns: dict with visual states and final extracted KIE dictionary.
-    """
     # 1. Segmentation
     cropped_img = stage1_segment(models['seg'], img_bgr)
-    
+
     # 2. Normalization
     norm_gray = stage2_normalize(models['rot'], cropped_img)
-    
+
     # 3. Detection
     boxes = stage3_detect_text(models['det'], norm_gray)
-    
+
     # 4. OCR
     texts = stage4_ocr(models['ocr'], norm_gray, boxes)
-    
+
     # 5. KIE
     extracted_json, box_labels = stage5_kie(models['kie_model'], models['kie_processor'], norm_gray, boxes, texts)
-    
+
     # Draw visualizations
     det_img = draw_detection_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes)
     ocr_img = draw_ocr_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes, texts)
     kie_img = draw_kie_boxes(cv2.cvtColor(norm_gray, cv2.COLOR_GRAY2BGR), boxes, box_labels)
-    
+
     return {
         "raw_img": img_bgr,
         "cropped": cropped_img,
