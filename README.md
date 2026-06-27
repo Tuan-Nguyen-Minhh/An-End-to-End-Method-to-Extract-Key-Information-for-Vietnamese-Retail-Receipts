@@ -57,7 +57,7 @@ Extracts semantic entities from the recognized text using LayoutLMv3, combining 
 
 ![KIE Predictions](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/05_kie_extraction.jpg)
 
-**Structured Extraction Table:**
+**JSON STRUCTURE OUTPUT:**
 
 ![Structured Output](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/06_extracted_data.png)
 
