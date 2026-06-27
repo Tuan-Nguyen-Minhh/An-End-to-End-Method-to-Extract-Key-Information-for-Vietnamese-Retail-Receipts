@@ -4,7 +4,7 @@ This pipeline represents my final bachelor thesis project, which provides an end
 
 ## Pipeline Architecture
 
-![End-to-End Pipeline](final_pipeline.drawio.pdf)
+![End-to-End Pipeline](final_pipeline.drawio.png)
 
 ## Methodology & Stages
 
