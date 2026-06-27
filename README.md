@@ -13,9 +13,9 @@ Automatically localizes and segments the receipt from noisy backgrounds using a 
 
 *   **Result**: The segmentation model achieved an outstanding **Box mAP50 of 99.5%**, **Box Precision of 99.7%**, and **Box Recall of 100%**; and a **Mask mAP50 of 99.5%**, **Mask Precision of 99.7%**, and **Mask Recall of 100%** on the validation set.
 
-![Raw Input](01_Segmentation_And_Detection_YOLO/sample/01_raw.jpg)
+![Raw Input](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/00_raw_input.jpg)
 
-![Detection Visual](01_Segmentation_And_Detection_YOLO/sample/02_detection_visual.jpg)
+![Detection Visual](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/01_segmentation_visual.jpg)
 
 ### Stage 2: Receipt Image Normalization (02_Normalize_Receipts)
 A multi-step preprocessing suite to clean up the segmented document.
@@ -24,7 +24,7 @@ A multi-step preprocessing suite to clean up the segmented document.
 Masks out the background pixels to black and crops the image strictly to the receipt's bounding box.
 
 ![Segmented Mask](02_Normalize_Receipts/01_background_removal_and_cropping/samples/02_segmented_mask.jpg)
-![Cropped Result](02_Normalize_Receipts/01_background_removal_and_cropping/samples/03_cropped_result.jpg)
+![Cropped Result](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/02_cropped_receipt.jpg)
 
 **2.2 Rotation Correction (02_rotation_correction):**
 Classifies the orientation of the cropped receipt and rotates it upright.
@@ -35,19 +35,19 @@ Classifies the orientation of the cropped receipt and rotates it upright.
 **2.3 Deskewing & Enhancing (03_deskewing_and_enhancing):**
 Evaluates text alignment angles and performs deskewing to align text lines horizontally.
 
-![Deskewed Result](02_Normalize_Receipts/03_deskewing_and_enhancing/samples/05_deskewed_enhanced.jpg)
+![Deskewed Result](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/03_normalized_receipt.jpg)
 
 ### Stage 3: Text Bounding Box Detection (03_text_detection)
 Identifies and locates individual text lines and blocks across the normalized, upright receipt.
 *   **Result**: The YOLOv8 Nano text detection model achieved a **Box mAP50 of 97.2%**, **Box Precision of 94.8%**, and **Box Recall of 97.2%** on the validation set.
 
-![Text Detection](03_text_detection/samples/06_text_detection.jpg)
+![Text Detection](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/text_detection_vs_2.jpg)
 
 ### Stage 4: Text Recognition (OCR) (04_text_recognition)
 Converts cropped text line boxes into digital text, optimized for Vietnamese character diacritics.
 *   **Result**: The fine-tuned VietOCR model achieved a **full sequence accuracy of 0.74** and a **per-character accuracy of 0.89**.
 
-![Visual OCR](04_text_recognition/samples/visual_ocr.jpg)
+![Visual OCR](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/04_1_ocr_results.jpg)
 
 ### Stage 5: Key Information Extraction (05_kie_layoutlmv3)
 Extracts semantic entities from the recognized text using LayoutLMv3, combining textual features, visual features, and spatial 2D coordinates.
@@ -55,11 +55,11 @@ Extracts semantic entities from the recognized text using LayoutLMv3, combining 
 
 **KIE Visual Prediction:**
 
-![KIE Predictions](05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_predictions.png)
+![KIE Predictions](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/05_kie_extraction.jpg)
 
 **Structured Extraction Table:**
 
-![Structured Output](05_kie_layoutlmv3/output_final_extraction/000595_jpg.rf.db17d6c6020b439b4368a070afc28d1f_structured_output.png)
+![Structured Output](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/06_extracted_data.png)
 
 **Confusion Matrix:**
 
@@ -144,18 +144,3 @@ The datasets cover the following stages:
 ├── README.md
 └── full_pipeline.drawio.png
 ```
-
-## Extracted Information Sample Output
-
-The final result of the extraction pipeline generates a highly structured dictionary/JSON mapped as follows:
-
-| Field Label | Extracted Text |
-| :--- | :--- |
-| SHOP_NAME | FICITEA & COFFEE |
-| ADDR | 148 Hòn Khói Ninh Diêm Ninh Hòa, Khánh H |
-| PHONE | 0852278979 |
-| TITLE | HOÁ ĐƠN |
-| PRODUCT_NAME | Trân châu Truyền Cookiesa Cream Sữa tươi Trân châu D... |
-| AMOUNT | 2 2 2 1 1 1 |
-| UPRICE | 19.000 5.000 30.000 25.000 5.000 |
-| TPRICE | 108.000đ |
