@@ -4,7 +4,7 @@ This pipeline represents my final bachelor thesis project, which provides an end
 
 ## Pipeline Architecture
 
-![End-to-End Pipeline](full_pipeline.drawio.png)
+![End-to-End Pipeline](final_pipeline.drawio.pdf)
 
 ## Methodology & Stages
 
@@ -30,7 +30,7 @@ Masks out the background pixels to black and crops the image strictly to the rec
 Classifies the orientation of the cropped receipt and rotates it upright.
 *   **Result**: The ResNet-18 model achieved an outstanding validation accuracy of **99.15%** (Macro F1-score of **97.38%**) and a test accuracy of **99.10%** (Macro F1-score of **96.67%**).
 
-![Rotated Result](02_Normalize_Receipts/02_rotation_correction/samples/04_rotated_result.jpg)
+![Rotated Result](normalization_drawio_steps/03_rotated_upright.jpg)
 
 **2.3 Deskewing & Enhancing (03_deskewing_and_enhancing):**
 Evaluates text alignment angles and performs deskewing to align text lines horizontally.
