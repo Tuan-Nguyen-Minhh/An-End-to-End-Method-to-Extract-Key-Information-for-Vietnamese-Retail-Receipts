@@ -23,7 +23,7 @@ A multi-step preprocessing suite to clean up the segmented document.
 **2.1 Background Removal & Cropping (01_background_removal_and_cropping):**
 Masks out the background pixels to black and crops the image strictly to the receipt's bounding box.
 
-![Segmented Mask](02_Normalize_Receipts/01_background_removal_and_cropping/samples/02_segmented_mask.jpg)
+![Segmented Mask](normalization_drawio_steps/01_background_separated.jpg)
 ![Cropped Result](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/02_cropped_receipt.jpg)
 
 **2.2 Rotation Correction (02_rotation_correction):**
