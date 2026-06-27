@@ -24,7 +24,7 @@ A multi-step preprocessing suite to clean up the segmented document.
 Masks out the background pixels to black and crops the image strictly to the receipt's bounding box.
 
 ![Segmented Mask](normalization_drawio_steps/01_background_separated.jpg)
-![Cropped Result](01_Segmentation_And_Detection_YOLO/sample/pipeline1_drawio_steps/02_cropped_receipt.jpg)
+![Cropped Result](normalization_drawio_steps/02_cropped_raw.jpg)
 
 **2.2 Rotation Correction (02_rotation_correction):**
 Classifies the orientation of the cropped receipt and rotates it upright.
